@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
@@ -12,6 +12,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def login(
     user_data: UserLogin,
     response: Response,
+    request: Request,  # <-- added to access headers/scheme
     db: Session = Depends(get_db)
 ):
     """Login endpoint"""
@@ -27,15 +28,30 @@ async def login(
         data={"sub": user.email, "role": user.role}
     )
     
-    # UPDATED COOKIE SETTINGS FOR LOCALHOST DEVELOPMENT
+    # --- Improved: Robust Cookie Settings for Real Domains & Reverse Proxy Handling ---
+    # Detect scheme, considering X-Forwarded-Proto if behind a reverse proxy
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).lower()
+    secure_flag = (proto == "https")
+
+    # Derive host (again, honor X-Forwarded-Host with fallback)
+    host = request.headers.get("x-forwarded-host") or request.url.hostname or ""
+    # Only set the domain for real public domains (not localhost or IPs)
+    cookie_domain = None
+    if host and host not in ("localhost", "127.0.0.1") and not host.replace('.', '').isdigit():
+        cookie_domain = f".{host.split(':')[0]}"  # Leading dot = allow subdomains
+
+    # samesite = 'none' required for cross-origin secure, otherwise 'lax' for dev
+    samesite = "none" if secure_flag else "lax"
+
     response.set_cookie(
         key="token",
         value=access_token,
         httponly=True,
-        secure=False,      # Keep False for http://localhost
-        samesite="lax",    # 'lax' is usually fine, but 'none' requires secure=True
+        secure=secure_flag,
+        samesite=samesite,
         max_age=7*24*60*60,
-        path="/"           # <--- CRITICAL: Ensure path is root so it's valid for all routes
+        path="/",
+        domain=cookie_domain
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
