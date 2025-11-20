@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Background Colors - Using #faf9f7 (cream/off-white) */
+    --color-background: 35 25 18; /* Converted #faf9f7 to HSL */
+    --color-foreground: 312 23 26; /* Deep plum for text */
+
+    /* Card Colors */
+    --color-card: 35 25 18;
+    --color-card-foreground: 312 23 26;
+
+    /* Popover Colors */
+    --color-popover: 35 25 18;
+    --color-popover-foreground: 312 23 26;
+
+    /* Primary Color - Using #453142 (deep plum) */
+    --color-primary: 312 23 26; /* #453142 in HSL */
+    --color-primary-foreground: 35 25 18;
+
+    /* Secondary Colors */
+    --color-secondary: 312 15 35;
+    --color-secondary-foreground: 35 25 18;
+
+    /* Muted Colors */
+    --color-muted: 30 20 92;
+    --color-muted-foreground: 312 12 45;
+
+    /* Accent Colors */
+    --color-accent: 312 18 32;
+    --color-accent-foreground: 35 25 18;
+
+    /* Destructive (Error) Colors */
+    --color-destructive: 0 84.2 60.2;
+    --color-destructive-foreground: 35 25 18;
+
+    /* Border & Input */
+    --color-border: 312 10 85;
+    --color-input: 312 10 85;
+    --color-ring: 312 23 26;
+
+    --radius: 0.5rem;
+
+    --font-family-inter: var(--font-inter);
+    --font-family-amiri: var(--font-amiri);
+  }
+
+  .dark {
+    /* Dark mode: Inverted colors */
+    --color-background: 312 23 16;
+    --color-foreground: 35 25 98;
+
+    --color-card: 312 23 16;
+    --color-card-foreground: 35 25 98;
+
+    --color-popover: 312 23 16;
+    --color-popover-foreground: 35 25 98;
+
+    --color-primary: 312 23 40;
+    --color-primary-foreground: 35 25 98;
+
+    --color-secondary: 312 20 25;
+    --color-secondary-foreground: 35 25 98;
+
+    --color-muted: 312 20 25;
+    --color-muted-foreground: 312 15 70;
+
+    --color-accent: 312 20 25;
+    --color-accent-foreground: 35 25 98;
+
+    --color-destructive: 0 62.8 30.6;
+    --color-destructive-foreground: 35 25 98;
+
+    --color-border: 312 20 25;
+    --color-input: 312 20 25;
+    --color-ring: 312 23 40;
+  }
+}
+
+/* Flipbook Styles */
+.flipbook-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.page {
+  background-color: white;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.page-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.stf__wrapper {
+  transform-origin: center center !important;
+}

@@ -1,0 +1,73 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+env/
+
+# Next.js
+wqtc/.next/
+wqtc/out/
+wqtc/build/
+wqtc/.vercel
+wqtc/node_modules/
+
+# Production build
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Uploaded files (keep structure, ignore content)
+backend/static/pdfs/*
+backend/static/coverpages/*
+backend/static/uploads/*
+!backend/static/pdfs/.gitkeep
+!backend/static/coverpages/.gitkeep
+!backend/static/uploads/.gitkeep
+
+# Database
+postgres_data/
+*.db
+*.sqlite
+
+# Alembic
+alembic/versions/*.pyc
+wq
+code_dumpy.py
+codebase_export.txt
+codebase_export.txt

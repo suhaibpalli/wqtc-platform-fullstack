@@ -1,0 +1,73 @@
+services:
+  # 1. Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: wqtc_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=wqtc_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wqtc_network
+
+  # 2. Backend Service (FastAPI)
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wqtc_backend
+    restart: always
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      # Persist uploaded files (PDFs, Covers)
+      - static_volume:/app/static
+    environment:
+      # Connect to 'db' service defined above
+      - DATABASE_URL=postgresql://postgres:password@db:5432/wqtc_db
+      - JWT_SECRET=${JWT_SECRET}
+      # Allow frontend container and browser access
+      - CORS_ORIGINS=["http://localhost:3000","http://frontend:3000"]
+    ports:
+      - "8000:8000" # Expose for debugging if needed, or internal only
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - wqtc_network
+
+  # 3. Frontend Service (Next.js)
+  frontend:
+    build: 
+      context: ./wqtc
+      dockerfile: Dockerfile
+      args:
+        - BACKEND_INTERNAL_URL=http://backend:8000
+    container_name: wqtc_frontend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      # Internal Docker URL for server-side rewrites
+      - BACKEND_INTERNAL_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - wqtc_network
+
+volumes:
+  postgres_data:
+  static_volume:
+
+networks:
+  wqtc_network:
+    driver: bridge
