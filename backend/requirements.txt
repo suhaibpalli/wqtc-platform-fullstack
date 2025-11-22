@@ -13,3 +13,5 @@ python-dotenv==1.0.1
 aiofiles==24.1.0
 Pillow==11.0.0
 email-validator
+pandas
+openpyxl

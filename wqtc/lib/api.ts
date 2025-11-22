@@ -56,6 +56,16 @@ export const api = {
   deleteVideo: (id: number) =>
     fetchAPI(`/library/${id}`, { method: 'DELETE' }),
 
+  // --- Add these under Admin Video Operations ---
+
+  // Uploads file for preview
+  previewBulkVideo: (formData: FormData) =>
+    fetchAPI('/library/bulk-preview', { method: 'POST', body: formData }),
+
+  // Commits the valid data
+  createBulkVideos: (videos: any[]) =>
+    fetchAPI('/library/bulk-create', { method: 'POST', body: JSON.stringify(videos) }),
+
   // Surah management
   getSurahs: () =>
     fetchAPI('/surah'),
