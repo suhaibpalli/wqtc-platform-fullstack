@@ -56,32 +56,33 @@ export default function EBooksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchTerm]);
 
-  // --- NEW fetchEBooks LOGIC ---
+  // --- NEW fetchEBooks LOGIC (Sorted Alphabetically) ---
   const fetchEBooks = async () => {
     setLoading(true);
     try {
-      // Use the API client (GET request) instead of manual POST
-      // The backend returns an array of all books; we filter/paginate below
+      // Fetch data (ignoring backend sort since we will sort in frontend)
       const data = await api.getEbooks({ sort: 'DESC' });
 
       // Coerce to array either from "data" (FastAPI) or "data.result"
-      const allBooks = Array.isArray(data) ? data : (data.result || []);
+      let allBooks: EBook[] = Array.isArray(data) ? data : (data.result || []);
 
-      // 1. Filter by Search
-      let filtered = allBooks;
+      // 1. Frontend Sort: Alphabetical by Title
+      allBooks.sort((a, b) => a.title.localeCompare(b.title));
+
+      // 2. Filter by Search
       if (searchTerm) {
-        filtered = allBooks.filter((book: EBook) =>
+        allBooks = allBooks.filter((book) =>
           book.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
 
-      setTotal(filtered.length);
-      setTotalPages(Math.max(1, Math.ceil(filtered.length / ebooksPerPage)));
+      setTotal(allBooks.length);
+      setTotalPages(Math.max(1, Math.ceil(allBooks.length / ebooksPerPage)));
 
-      // 2. Paginate
+      // 3. Paginate
       const startIndex = (currentPage - 1) * ebooksPerPage;
       const endIndex = startIndex + ebooksPerPage;
-      const paginatedBooks = filtered.slice(startIndex, endIndex);
+      const paginatedBooks = allBooks.slice(startIndex, endIndex);
 
       setEbooks(paginatedBooks);
 
@@ -381,9 +382,9 @@ export default function EBooksPage() {
               </div>
             )}
 
-            {/* Pagination */}
+            {/* Smart Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
+              <div className="flex justify-center gap-2 mt-8 flex-wrap">
                 <Button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
@@ -392,19 +393,59 @@ export default function EBooksPage() {
                 >
                   Previous
                 </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={
-                      currentPage === page
-                        ? 'bg-[#453142] text-[#faf9f7]'
-                        : 'bg-white text-[#453142] border border-[#453142]/20'
+
+                {/* Smart Page Numbers Generation */}
+                {(() => {
+                  const pages = [];
+                  // Always show these limits
+                  const showEdges = 1;
+                  // Show this many neighbors around current page
+                  const siblings = 1; 
+                  
+                  // Logic to create ranges like: 1 ... 4 5 6 ... 20
+                  for (let i = 1; i <= totalPages; i++) {
+                     if (
+                       i <= showEdges || // First page(s)
+                       i > totalPages - showEdges || // Last page(s)
+                       (i >= currentPage - siblings && i <= currentPage + siblings) // Neighbors
+                     ) {
+                       pages.push(i);
+                     } else if (
+                       (i === currentPage - siblings - 1 && i > showEdges) || 
+                       (i === currentPage + siblings + 1 && i < totalPages - showEdges)
+                     ) {
+                       // Add separator only at the boundaries
+                       pages.push('...');
+                     }
+                  }
+                  
+                  // Deduplicate '...' if logic pushed multiple
+                  const uniquePages = pages.filter((v, i, a) => v !== a[i-1] || typeof v === 'number');
+
+                  return uniquePages.map((page, idx) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`dots-${idx}`} className="px-2 py-2 text-[#453142]/50">
+                          ...
+                        </span>
+                      );
                     }
-                  >
-                    {page}
-                  </Button>
-                ))}
+                    return (
+                      <Button
+                        key={page}
+                        onClick={() => setCurrentPage(Number(page))}
+                        className={
+                          currentPage === page
+                            ? 'bg-[#453142] text-[#faf9f7]'
+                            : 'bg-white text-[#453142] border border-[#453142]/20'
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  });
+                })()}
+
                 <Button
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}

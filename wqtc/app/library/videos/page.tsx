@@ -22,11 +22,13 @@ export default function VideosPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const videosPerPage = 12;
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch Surahs on mount
+  // Fetch Surahs & Videos on mount
   useEffect(() => {
     fetchSurahs();
     fetchVideos();
+    // eslint-disable-next-line
   }, []);
 
   const fetchSurahs = async () => {
@@ -38,20 +40,50 @@ export default function VideosPage() {
     }
   };
 
+  // --- NEW fetchVideos LOGIC (Sorted Alphabetically) ---
   const fetchVideos = async (filters: any = {}) => {
     setLoading(true);
     try {
-      // FastAPI expects specific payload keys matching your Python Schema
+      // Fetch data (ignoring backend sort since we will sort in frontend)
       const payload = {
         surah: filters.surah,
         versus: filters.versus,
         search: filters.search,
         sort: 'DESC'
       };
-      
       const data = await api.getVideos(payload); // New API call
-      setVideos(data.result || []);
-      setCurrentPage(1); // Reset pagination
+
+      let allVideos: Video[] = Array.isArray(data) ? data : (data.result || []);
+
+      // 1. Frontend Sort: Alphabetical by Title
+      allVideos.sort((a, b) => a.title.localeCompare(b.title));
+
+      // 2. Filter by Search
+      if (searchTerm) {
+        allVideos = allVideos.filter((video) =>
+          video.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      // The filters for surah and verse are also handled server-side (payload),
+      // but if you want to guarantee client-side filtering, uncomment below:
+      // if (selectedSurah)
+      //   allVideos = allVideos.filter((v) => v.surah_no === selectedSurah);
+      // if (selectedVerse)
+      //   allVideos = allVideos.filter(
+      //     (v) =>
+      //       v.starting_ayah <= selectedVerse &&
+      //       (v.ending_ayah ? v.ending_ayah >= selectedVerse : v.starting_ayah >= selectedVerse)
+      //   );
+
+      setTotalPages(Math.max(1, Math.ceil(allVideos.length / videosPerPage)));
+
+      // 3. Paginate
+      const startIndex = (currentPage - 1) * videosPerPage;
+      const endIndex = startIndex + videosPerPage;
+      const paginatedVideos = allVideos.slice(startIndex, endIndex);
+
+      setVideos(paginatedVideos);
     } catch (error) {
       console.error('Error fetching videos:', error);
     } finally {
@@ -60,6 +92,7 @@ export default function VideosPage() {
   };
 
   const handleSearch = () => {
+    setCurrentPage(1);
     fetchVideos({
       surah: selectedSurah,
       versus: selectedVerse,
@@ -71,8 +104,19 @@ export default function VideosPage() {
     setSelectedSurah(null);
     setSelectedVerse(null);
     setSearchTerm('');
+    setCurrentPage(1);
     fetchVideos();
   };
+
+  // Whenever currentPage/search/filter changes, refresh displayed videos
+  useEffect(() => {
+    fetchVideos({
+      surah: selectedSurah,
+      versus: selectedVerse,
+      search: searchTerm
+    });
+    // eslint-disable-next-line
+  }, [currentPage]);
 
   // Get verses for selected Surah
   const getVersesForSurah = () => {
@@ -84,27 +128,76 @@ export default function VideosPage() {
 
   const verses = getVersesForSurah();
 
-  // Pagination logic
-  const indexOfLastVideo = currentPage * videosPerPage;
-  const indexOfFirstVideo = indexOfLastVideo - videosPerPage;
-  const currentVideos = videos.slice(indexOfFirstVideo, indexOfLastVideo);
-  const totalPages = Math.ceil(videos.length / videosPerPage);
-
-  // Extract YouTube ID
+  // Extract YouTube ID (ignoring any t= param or fragment in the link!)
   const getYouTubeId = (url: string) => {
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=))([^&?/]+)/);
+    // Remove any query params after watch?v=xxxx or youtu.be/xxxx, only extract the ID itself
+    // and avoid getting t= or &t=
+    let cleanUrl = url;
+    // If url like .../watch?v=XXXX&t=1053s, just take XXXX
+    const match = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=))([^&?/]+)/);
     return match ? match[1] : '';
+  };
+
+  // Instead of adding &start=..., construct the embed link by extracting t= param from DB url if present
+  const getEmbedUrlWithTimestamp = (youTubeLink: string) => {
+    const videoId = getYouTubeId(youTubeLink);
+
+    // Try to extract t=SECONDS or t=XXmYYs/XXs from the youTubeLink param/query string
+    let startTime = 0;
+    try {
+      // Parse the link as a URL, try to get "t"
+      let urlObj: URL | null = null;
+      try {
+        urlObj = new URL(youTubeLink);
+      } catch (err) {
+        // fallback for legacy links
+        const parser = document.createElement('a');
+        parser.href = youTubeLink;
+        urlObj = {
+          search: parser.search,
+          hash: parser.hash,
+        } as any;
+      }
+      // Check for either search params or hash
+      let tValue: string | null = null;
+      if (urlObj?.search) {
+        const params = new URLSearchParams(urlObj.search);
+        tValue = params.get('t');
+      }
+      if (!tValue && urlObj?.hash) {
+        // sometimes t= appears in the fragment
+        const hashParams = new URLSearchParams(urlObj.hash.substring(1));
+        tValue = hashParams.get('t');
+      }
+      if (tValue) {
+        // t=230s or t=2m34s or t=230 (seconds)
+        // Preferably use seconds
+        const match = tValue.match(/(?:(\d+)m)?(\d+)?s?/);
+        if (match) {
+          const min = match[1] ? parseInt(match[1], 10) : 0;
+          const sec = match[2] ? parseInt(match[2], 10) : 0;
+          startTime = min * 60 + sec;
+        } else if (!isNaN(Number(tValue))) {
+          startTime = Number(tValue);
+        }
+      }
+    } catch (e) {
+      // ignore
+      startTime = 0;
+    }
+
+    let embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+    if (startTime > 0) {
+      embedUrl += `&start=${startTime}`;
+    }
+    return embedUrl;
   };
 
   // Try extract YouTube channel ID from url if available in the Video type
   const getYouTubeChannelId = (video: Video) => {
-    // If video.youTube_channel_id exists use it, else fallback to environment or leave empty
-    // You may want to populate this on video objects from your backend for more reliability.
-    // Example fallback:
     if ('youTube_channel_id' in video && video.youTube_channel_id) {
       return video.youTube_channel_id;
     }
-    // fallback channel id (you may put your own channel id here)
     return process.env.NEXT_PUBLIC_YT_CHANNEL_ID || '';
   };
 
@@ -224,7 +317,7 @@ export default function VideosPage() {
             <div
               className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"
             >
-              {currentVideos.map((video, index) => (
+              {videos.map((video, index) => (
                 <motion.div
                   key={video.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -234,8 +327,6 @@ export default function VideosPage() {
                 >
                   <Card
                     className="group cursor-pointer overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-white flex flex-col h-full min-h-[380px]"
-                    // min-h to enforce card height as much as possible. 
-                    // Adjust min-h-[380px] as needed, or use a responsive value.
                     onClick={() => setSelectedVideo(video)}
                   >
                     {/* Thumbnail */}
@@ -257,7 +348,6 @@ export default function VideosPage() {
                     <CardContent className="flex flex-col flex-1 justify-between p-4">
                       <div>
                         <h3 className="font-semibold text-[#453142] line-clamp-2 mb-2 min-h-[3em]">
-                          {/* min-h-[3em] to enforce space for two lines always */}
                           {video.title}
                         </h3>
                         <p className="text-sm text-[#453142]/70 min-h-[1.6em]">
@@ -274,7 +364,7 @@ export default function VideosPage() {
               ))}
             </div>
             {/* No Results */}
-            {currentVideos.length === 0 && (
+            {videos.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-[#453142]/70 text-lg">
                   No videos found. Try adjusting your filters.
@@ -282,9 +372,9 @@ export default function VideosPage() {
               </div>
             )}
 
-            {/* Pagination */}
-            {videos.length > videosPerPage && (
-              <div className="flex justify-center gap-2 mt-8">
+            {/* Smart Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-8 flex-wrap">
                 <Button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
@@ -294,15 +384,52 @@ export default function VideosPage() {
                   Previous
                 </Button>
 
-                {[...Array(totalPages)].map((_, i) => (
-                  <Button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={currentPage === i + 1 ? 'bg-[#453142] text-[#faf9f7]' : 'bg-white text-[#453142] border border-[#453142]/20'}
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
+                {/* Smart Page Numbers Generation */}
+                {(() => {
+                  const pages: (number | string)[] = [];
+                  const showEdges = 1;
+                  const siblings = 1;
+
+                  for (let i = 1; i <= totalPages; i++) {
+                    if (
+                      i <= showEdges ||
+                      i > totalPages - showEdges ||
+                      (i >= currentPage - siblings && i <= currentPage + siblings)
+                    ) {
+                      pages.push(i);
+                    } else if (
+                      (i === currentPage - siblings - 1 && i > showEdges) ||
+                      (i === currentPage + siblings + 1 && i < totalPages - showEdges)
+                    ) {
+                      pages.push('...');
+                    }
+                  }
+                  // Deduplicate '...' 
+                  const uniquePages = pages.filter((v, idx, arr) => v !== arr[idx - 1] || typeof v === 'number');
+
+                  return uniquePages.map((page, idx) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`dots-${idx}`} className="px-2 py-2 text-[#453142]/50">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <Button
+                        key={page}
+                        onClick={() => setCurrentPage(Number(page))}
+                        className={
+                          currentPage === page
+                            ? 'bg-[#453142] text-[#faf9f7]'
+                            : 'bg-white text-[#453142] border border-[#453142]/20'
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  });
+                })()}
 
                 <Button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -357,7 +484,11 @@ export default function VideosPage() {
                   <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${getYouTubeId(selectedVideo.youTube_link)}?autoplay=1&rel=0&modestbranding=1${getYouTubeChannelId(selectedVideo) ? `&origin=${typeof window !== 'undefined' ? window.location.origin : ''}&enablejsapi=1` : ''}${getYouTubeChannelId(selectedVideo) ? `&listType=user_uploads&list=${getYouTubeChannelId(selectedVideo)}` : ''}`}
+                    src={
+                      `${getEmbedUrlWithTimestamp(selectedVideo.youTube_link)}` +
+                      `${getYouTubeChannelId(selectedVideo) ? `&origin=${typeof window !== 'undefined' ? window.location.origin : ''}&enablejsapi=1` : ''}` +
+                      `${getYouTubeChannelId(selectedVideo) ? `&listType=user_uploads&list=${getYouTubeChannelId(selectedVideo)}` : ''}`
+                    }
                     title={selectedVideo.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -367,7 +498,6 @@ export default function VideosPage() {
                     Explanation:
                     - '&rel=0' ensures that, after the video ends, only related videos from the same channel will show (YouTube's official documented behavior).
                     - '&modestbranding=1' hides YouTube logo a bit.
-                    - The additional listType stuff is added if you provide a channel id to even further restrict, but `rel=0` is the main part for your ask.
                   */}
                 </div>
 
