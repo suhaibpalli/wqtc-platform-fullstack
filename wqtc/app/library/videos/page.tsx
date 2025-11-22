@@ -31,10 +31,16 @@ export default function VideosPage() {
     // eslint-disable-next-line
   }, []);
 
+  // FIX: Map backend 'total_verses' to frontend 'verses'
   const fetchSurahs = async () => {
     try {
-      const data = await api.getSurahs(); // New API call
-      setSurahs(data.result || []);
+      const data = await api.getSurahs(); 
+      // The backend returns 'total_verses', but our UI expects 'verses'. We map it here.
+      const mappedSurahs = (data.result || []).map((s: any) => ({
+        ...s,
+        verses: s.total_verses || s.verses || 0
+      }));
+      setSurahs(mappedSurahs);
     } catch (error) {
       console.error('Error fetching surahs:', error);
     }
@@ -100,12 +106,14 @@ export default function VideosPage() {
     });
   };
 
+  // FIX: Make reset clear grid/filter immediately
   const handleReset = () => {
     setSelectedSurah(null);
     setSelectedVerse(null);
     setSearchTerm('');
     setCurrentPage(1);
-    fetchVideos();
+    // Explicitly pass nulls to fetchVideos to clear the grid immediately
+    fetchVideos({ surah: null, versus: null, search: '' });
   };
 
   // Whenever currentPage/search/filter changes, refresh displayed videos
@@ -270,11 +278,12 @@ export default function VideosPage() {
                 <select
                   value={selectedVerse || ''}
                   onChange={(e) => setSelectedVerse(e.target.value ? Number(e.target.value) : null)}
-                  disabled={!selectedSurah}
+                  // REMOVED: disabled={!selectedSurah} -> Allows filtering by verse independently
                   className="w-full px-4 py-2 border border-[#453142]/20 rounded-md focus:ring-2 focus:ring-[#453142] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">All Verses</option>
-                  {verses.map((verse) => (
+                  {/* If no surah selected, show generic range (e.g. 1-286 max), otherwise specific range */}
+                  {(selectedSurah ? verses : Array.from({ length: 286 }, (_, i) => i + 1)).map((verse) => (
                     <option key={verse} value={verse}>
                       Verse {verse}
                     </option>

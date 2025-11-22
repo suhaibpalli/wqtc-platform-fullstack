@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 interface PDFFlipbookProps {
   filename: string;
+  coverImage?: string;
 }
 
 interface PageProps {
@@ -14,6 +15,7 @@ interface PageProps {
   canvas: HTMLCanvasElement;
 }
 
+// Standard PDF Page Wrapper
 const Page = forwardRef<HTMLDivElement, PageProps>(({ pageNumber, canvas }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,10 +40,38 @@ const Page = forwardRef<HTMLDivElement, PageProps>(({ pageNumber, canvas }, ref)
     </div>
   );
 });
-
 Page.displayName = 'Page';
 
-export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
+// Cover Page Wrapper
+const CoverPage = forwardRef<HTMLDivElement, { src: string }>(({ src }, ref) => {
+  return (
+    <div ref={ref} className="page bg-white shadow-sm h-full w-full overflow-hidden" dir="rtl">
+      <div className="page-content h-full w-full flex flex-col p-0">
+        <div className="w-full h-full relative">
+          <img
+            src={src}
+            alt="Book Cover"
+            className="w-full h-full object-contain"
+            loading="eager"
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+CoverPage.displayName = 'CoverPage';
+
+// Blank Page Component
+const BlankPage = forwardRef<HTMLDivElement>((_props, ref) => (
+  <div
+    ref={ref}
+    className="page bg-white shadow-none h-full w-full overflow-hidden flex items-center justify-center"
+    dir="rtl"
+  />
+));
+BlankPage.displayName = 'BlankPage';
+
+export default function PDFFlipbook({ filename, coverImage }: PDFFlipbookProps) {
   const flipbookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<HTMLCanvasElement[]>([]);
@@ -74,8 +104,8 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
         const { clientWidth, clientHeight } = containerRef.current;
         const isMobile = window.innerWidth < 768;
 
-        let pageHeight = clientHeight * 0.95; // 5% padding
-        let pageWidth = pageHeight * 0.70; // Aspect ratio 1:1.4
+        let pageHeight = clientHeight * 0.95;
+        let pageWidth = pageHeight * 0.70;
 
         if (pageWidth * (isMobile ? 1 : 2) > clientWidth) {
           pageWidth = (clientWidth * (isMobile ? 0.9 : 0.45));
@@ -98,7 +128,7 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
       loadPDF();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filename, pdfjs, dimensions]);
+  }, [filename, pdfjs, dimensions, coverImage]);
 
   const loadPDF = async () => {
     if (!pdfjs) return;
@@ -108,16 +138,35 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
       const pdfUrl = `/pdfs/${filename}`;
       const loadingTask = pdfjs.getDocument(pdfUrl);
       const pdf = await loadingTask.promise;
-      setTotalPages(pdf.numPages);
 
       const pagePromises: Promise<HTMLCanvasElement>[] = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         pagePromises.push(renderPage(pdf, i, dimensions.width, dimensions.height));
       }
+      let renderedPages = (await Promise.all(pagePromises)).reverse(); // RTL order
 
-      // Reverse the pages before sending them to the flipbook
-      const renderedPages = (await Promise.all(pagePromises)).reverse();
+      // Add blank page logic: odd page count (including cover) => add blank
+      // Count: pdf pages + (coverImage? 1 : 0)
+      let total = renderedPages.length + (coverImage ? 1 : 0);
+
+      let extraBlank = false;
+      if (total % 2 === 1) {
+        // Must add a blank page so it becomes even
+        extraBlank = true;
+      }
+
+      // If a blank page is needed, for RTL, insert at the start so it will be the last page shown at the left
+      if (extraBlank) {
+        // For RTL: Insert at front. (Rightmost page in RTL will be the last in the DOM order.)
+        renderedPages.unshift(null as any); // We'll render BlankPage for this
+        total += 1;
+      }
+
       setPages(renderedPages);
+
+      // Because the "totalPages" used for the controls and flipbook must match the actual count including cover and extra blank
+      setTotalPages(total);
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -137,7 +186,7 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
     const scaleX = targetWidth / unscaledViewport.width;
     const scaleY = targetHeight / unscaledViewport.height;
 
-    const scale = Math.min(scaleX, scaleY) * 2; // * 2 for retina/high DPI sharpness
+    const scale = Math.min(scaleX, scaleY) * 2;
 
     const viewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
@@ -156,11 +205,9 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
     return canvas;
   };
 
-  // Navigation for RTL - nextPage is flipNext (to the left), prevPage is flipPrev (to the right)
   const nextPage = () => flipbookRef.current?.pageFlip().flipNext();
   const prevPage = () => flipbookRef.current?.pageFlip().flipPrev();
 
-  // Reverse page number reporting for RTL
   const onFlip = (e: any) => {
     setCurrentPage(e.data);
   };
@@ -197,8 +244,8 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
           mobileScrollSupport={true}
           onFlip={onFlip}
           className="shadow-2xl"
-          style={{ direction: 'rtl' }} // force RTL for flipping
-          startPage={totalPages > 0 ? totalPages - 1 : 0} // start from last page (rightmost)
+          style={{ direction: 'rtl' }}
+          startPage={totalPages > 0 ? totalPages - 1 : 0}
           drawShadow={true}
           flippingTime={800}
           usePortrait={typeof window !== 'undefined' ? window.innerWidth < 768 : false}
@@ -212,9 +259,17 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
           // @ts-ignore
           rtl={true}
         >
-          {pages.map((canvas, index) => (
-            <Page key={index} pageNumber={index + 1} canvas={canvas} />
-          ))}
+          {/* PDF Pages (RTL: reversed, so first in array is rightmost) - blank pages are 'null' */}
+          {pages.map((canvas, index) =>
+            canvas ? (
+              <Page key={`pdf-${index}`} pageNumber={index + 1} canvas={canvas} />
+            ) : (
+              <BlankPage key={`blank-${index}`} />
+            )
+          )}
+
+          {/* Cover image (if exists) as last DOM element, so it shows first in RTL */}
+          {coverImage && <CoverPage src={coverImage} />}
         </HTMLFlipBook>
       </div>
 

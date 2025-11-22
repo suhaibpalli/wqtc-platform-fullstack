@@ -133,6 +133,7 @@ export default function ImageGallerySection(): React.ReactElement {
     return () => window.removeEventListener("keydown", onKey);
   }, [modalOpen]);
 
+  // --- MODIFIED: To reset playerLoaded to false on slide change (active) ---
   useEffect(() => {
     const el = thumbsRef.current?.querySelector(`[data-thumb-index="${active}"]`) as HTMLElement | null;
     if (el && thumbsRef.current) {
@@ -140,7 +141,8 @@ export default function ImageGallerySection(): React.ReactElement {
       const px = el.offsetLeft - parent.clientWidth / 2 + el.clientWidth / 2;
       parent.scrollTo({ left: px, behavior: "smooth" });
     }
-    setPlayerLoaded(true);
+    // Reset playerLoaded so user lands on thumbnail first!
+    setPlayerLoaded(false);
     animateProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -196,7 +198,10 @@ export default function ImageGallerySection(): React.ReactElement {
   return (
     <section className="py-16 md:py-24 bg-[#fcfbfb]">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-serif text-[#2b2130] mb-6">Views of Eminent Scholars about our Classes</h2>
+        {/* UPDATED HEADING: Removed 'font-serif' and fixed color/size to match theme */}
+        <h2 className="text-3xl md:text-5xl font-bold text-[#453142] mb-12 text-center">
+          Views of Eminent Scholars about our Classes
+        </h2>
 
         {/* KEY FIXES:
             - items-stretch makes both columns match height
@@ -238,7 +243,14 @@ export default function ImageGallerySection(): React.ReactElement {
               </div>
 
               <div className="mt-6 flex gap-3 items-center">
-                <button onClick={() => setPlayerLoaded(true)} className="inline-flex items-center gap-3 rounded-full bg-[#453142] text-white px-4 py-2 shadow hover:bg-[#7e5e77] transition">
+                {/* MODIFIED BUTTON HANDLER: Watch Now triggers playerLoaded and pauses carousel */}
+                <button
+                  onClick={() => {
+                    setPlayerLoaded(true);
+                    setIsPaused(true); // stop carousel when watching
+                  }}
+                  className="inline-flex items-center gap-3 rounded-full bg-[#453142] text-white px-4 py-2 shadow hover:bg-[#7e5e77] transition"
+                >
                   <Play className="w-4 h-4" /> Watch Now
                 </button>
 
@@ -263,7 +275,8 @@ export default function ImageGallerySection(): React.ReactElement {
                       {playerLoaded && videos[active].ytId ? (
                         <iframe
                           title={videos[active].title}
-                          src={`https://www.youtube.com/embed/${videos[active].ytId}?rel=0&modestbranding=1`}
+                          // MODIFIED: Add &autoplay=1 to iframe for instant playback
+                          src={`https://www.youtube.com/embed/${videos[active].ytId}?rel=0&modestbranding=1&autoplay=1`}
                           className="w-full h-full"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -272,7 +285,15 @@ export default function ImageGallerySection(): React.ReactElement {
                       ) : (
                         <div className="w-full h-full relative flex items-center justify-center">
                           <Image src={ytThumb(videos[active].ytId)} alt={videos[active].title} fill className="object-cover opacity-80" sizes="(max-width: 1024px) 100vw, 900px" />
-                          <button onClick={() => setPlayerLoaded(true)} aria-label="Play video" className="absolute z-20 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#453142]/95 text-white hover:bg-[#7e5e77] transition">
+                          {/* MODIFIED BUTTON HANDLER: thumbnail Play button triggers playerLoaded and pause */}
+                          <button
+                            onClick={() => {
+                              setPlayerLoaded(true);
+                              setIsPaused(true);
+                            }}
+                            aria-label="Play video"
+                            className="absolute z-20 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#453142]/95 text-white hover:bg-[#7e5e77] transition"
+                          >
                             <Play className="w-4 h-4" /> Play
                           </button>
                         </div>
@@ -342,7 +363,7 @@ export default function ImageGallerySection(): React.ReactElement {
           </div>
         </div>
 
-        <div className="mt-6 text-xs text-[#7a636b]"><strong>Note:</strong> These clips are short excerpts from scholar remarks about our Word-for-Word Quran Translation Classes.</div>
+        {/* <div className="mt-6 text-xs text-[#7a636b]"><strong>Note:</strong> These clips are short excerpts from scholar remarks about our Word-for-Word Quran Translation Classes.</div> */}
       </div>
 
       {/* fullscreen modal */}

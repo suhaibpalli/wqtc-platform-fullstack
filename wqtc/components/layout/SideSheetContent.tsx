@@ -93,10 +93,10 @@ export default function SideSheetContent() {
       <div className="flex-1 overflow-y-auto py-6 px-8 flex flex-col">
         {/* Header */}
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-[#b187fc] font-semibold">
-            Word For Word Quran
+          <p className="text-xs uppercase tracking-[0.2em] text-[#453142]/60 font-bold">
+            WORD FOR WORD QURAN
           </p>
-          <h2 className="text-2xl font-bold mt-2" style={{ color: "#453142" }}>
+          <h2 className="text-2xl font-bold mt-2 text-[#453142]">
             Join Our Learning Program
           </h2>
         </div>
@@ -113,7 +113,7 @@ export default function SideSheetContent() {
         </div>
 
         {/* Description */}
-        <p className="text-base leading-relaxed mb-5" style={{ color: "#635a56" }}>
+        <p className="text-base leading-relaxed mb-5 text-[#453142]/80">
           Join thousands of students worldwide learning Quran translation through our immersive
           word-for-word methodology. Start your journey today!
         </p>
@@ -125,7 +125,7 @@ export default function SideSheetContent() {
               <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
               <h3 className="text-lg font-bold text-green-700">Registration Successful!</h3>
               <p className="text-sm text-green-600">
-                We'll contact you soon with program details.
+                We&apos;ll contact you soon with program details.
               </p>
             </div>
           ) : (
@@ -136,7 +136,7 @@ export default function SideSheetContent() {
             >
               {/* Name */}
               <div className="w-full">
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: "#453142" }}>
+                <label className="block text-sm font-semibold mb-1.5 text-[#453142]">
                   Full Name *
                 </label>
                 <input
@@ -145,14 +145,14 @@ export default function SideSheetContent() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-2 focus:ring-[#b187fc] focus:border-transparent bg-white text-[#453142] placeholder:text-[#635a56]/50"
+                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-1 focus:ring-[#453142] focus:border-transparent bg-white text-[#453142] placeholder:text-[#453142]/40 outline-none transition-all"
                   placeholder="Enter your full name"
                 />
               </div>
 
               {/* Email */}
               <div className="w-full">
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: "#453142" }}>
+                <label className="block text-sm font-semibold mb-1.5 text-[#453142]">
                   Email Address *
                 </label>
                 <input
@@ -161,14 +161,14 @@ export default function SideSheetContent() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-2 focus:ring-[#b187fc] focus:border-transparent bg-white text-[#453142] placeholder:text-[#635a56]/50"
+                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-1 focus:ring-[#453142] focus:border-transparent bg-white text-[#453142] placeholder:text-[#453142]/40 outline-none transition-all"
                   placeholder="your.email@example.com"
                 />
               </div>
 
               {/* Phone */}
               <div className="w-full">
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: "#453142" }}>
+                <label className="block text-sm font-semibold mb-1.5 text-[#453142]">
                   Phone Number *
                 </label>
                 <input
@@ -177,14 +177,14 @@ export default function SideSheetContent() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-2 focus:ring-[#b187fc] focus:border-transparent bg-white text-[#453142] placeholder:text-[#635a56]/50"
+                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-1 focus:ring-[#453142] focus:border-transparent bg-white text-[#453142] placeholder:text-[#453142]/40 outline-none transition-all"
                   placeholder="+91 98765 43210"
                 />
               </div>
 
               {/* Country */}
               <div className="w-full">
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: "#453142" }}>
+                <label className="block text-sm font-semibold mb-1.5 text-[#453142]">
                   Country *
                 </label>
                 <select
@@ -192,7 +192,7 @@ export default function SideSheetContent() {
                   value={formData.country}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-2 focus:ring-[#b187fc] focus:border-transparent bg-white text-[#453142]"
+                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-1 focus:ring-[#453142] focus:border-transparent bg-white text-[#453142] outline-none transition-all"
                 >
                   <option value="India">India</option>
                   <option value="USA">United States</option>
@@ -207,7 +207,7 @@ export default function SideSheetContent() {
 
               {/* Interest */}
               <div className="w-full">
-                <label className="block text-sm font-semibold mb-1.5" style={{ color: "#453142" }}>
+                <label className="block text-sm font-semibold mb-1.5 text-[#453142]">
                   What interests you? (Optional)
                 </label>
                 <textarea
@@ -215,7 +215,7 @@ export default function SideSheetContent() {
                   value={formData.interest}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-2 focus:ring-[#b187fc] focus:border-transparent bg-white text-[#453142] placeholder:text-[#635a56]/50 resize-none"
+                  className="w-full px-4 py-3 border border-[#453142]/20 rounded-lg focus:ring-1 focus:ring-[#453142] focus:border-transparent bg-white text-[#453142] placeholder:text-[#453142]/40 resize-none outline-none transition-all"
                   placeholder="e.g., Quran translation course, Tajweed classes..."
                 />
               </div>
@@ -224,7 +224,7 @@ export default function SideSheetContent() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#b187fc] text-white font-semibold py-3 hover:bg-[#9d6ee0] transition-colors shadow-lg disabled:opacity-50 text-lg mt-3"
+                className="w-full bg-[#453142] text-[#faf9f7] font-semibold py-6 hover:bg-[#5a3f54] transition-colors shadow-md disabled:opacity-70 text-lg mt-3"
               >
                 {isSubmitting ? (
                   <>
@@ -244,14 +244,14 @@ export default function SideSheetContent() {
       <div className="flex-shrink-0 pt-4 pb-6 px-8 bg-[#faf9f7] border-t border-[#453142]/10">
         {/* Social Links */}
         <div className="mb-4">
-          <h3 className="font-semibold mb-3 text-base" style={{ color: "#453142" }}>
+          <h3 className="font-semibold mb-3 text-base text-[#453142]">
             Connect With Us
           </h3>
           <div className="flex gap-3">
             {socialLinks.map((social) => (
               <a
                 key={social.label}
-                className="p-2.5 rounded-full bg-[#453142]/10 text-[#453142] hover:bg-[#b187fc] hover:text-white transition-all duration-200"
+                className="p-2.5 rounded-full bg-[#453142]/10 text-[#453142] hover:bg-[#453142] hover:text-white transition-all duration-200"
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -264,10 +264,10 @@ export default function SideSheetContent() {
         </div>
 
         <div className="mb-4">
-          <h3 className="font-semibold text-base" style={{ color: "#453142" }}>
+          <h3 className="font-semibold text-base text-[#453142]">
             Contact Us
           </h3>
-          <div className="text-sm space-y-2" style={{ color: "#635a56" }}>
+          <div className="text-sm space-y-2 text-[#453142]/80">
             <p className="flex items-center gap-2">
               <span className="font-medium">📞</span> +91 44 4776 6611
             </p>

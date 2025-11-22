@@ -72,13 +72,14 @@ export default function FAQSection() {
           {/* Left: Title and description */}
           <div className="md:w-1/2 flex flex-col justify-center">
             {/* "F.A.Q" badge */}
-            <span className="inline-block uppercase bg-[#e9e6e3] text-[#453142] text-xs px-3 py-1 rounded font-semibold tracking-wider mb-4" style={{letterSpacing:1}}>
+            <span className="inline-block uppercase bg-[#e9e6e3] text-[#453142] text-xs px-3 py-1 rounded font-semibold tracking-wider mb-4" style={{ letterSpacing: 1 }}>
               F.A.Q
             </span>
-            <h2 className="text-[2.1rem] md:text-[3rem] font-extrabold text-[#2d2632] leading-tight mb-4">
+            {/* UPDATED HEADING: Standardized font size, weight, and color */}
+            <h2 className="text-3xl md:text-5xl font-bold text-[#453142] leading-tight mb-4">
               Frequently Asked <br className="hidden md:block" /> Questions
             </h2>
-            <p className="text-[#877e8c] text-base md:text-lg max-w-md mb-10 md:mb-0">
+            <p className="text-[#453142]/80 text-base md:text-lg max-w-md mb-10 md:mb-0">
               Can’t find the answer? Please contact us and we’ll be happy to help. Browse below for some commonly asked questions about our Quran translation classes and resources.
             </p>
             <hr className="mt-8 w-16 border-t-2 border-[#ad99b2]" />
@@ -118,7 +119,7 @@ export default function FAQSection() {
                     <span
                       className={`ml-4 transition-transform duration-300 ${openId === faq.id ? "rotate-180" : ""}`}
                     >
-                      <ChevronDown className="w-5 h-5 text-[#9a82a6]" aria-hidden="true"/>
+                      <ChevronDown className="w-5 h-5 text-[#9a82a6]" aria-hidden="true" />
                     </span>
                   </button>
                   <AnimatePresence initial={false}>

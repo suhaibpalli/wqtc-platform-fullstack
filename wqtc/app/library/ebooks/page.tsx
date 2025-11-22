@@ -575,7 +575,8 @@ function FlipbookModal({
         {/* Viewer Content */}
         <div className="flex-1 relative bg-[#f3f3f3] overflow-hidden">
           {viewMode === 'flip' ? (
-            <PDFFlipbook filename={ebook.filename} />
+            // UPDATE: Pass coverImage prop here
+            <PDFFlipbook filename={ebook.filename} coverImage={ebook.coverImage} />
           ) : (
             <PDFScrollView filename={ebook.filename} />
           )}

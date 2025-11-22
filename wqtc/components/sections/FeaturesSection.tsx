@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 // Define letter-based icons for each language
 function EnglishLetterIcon() {
@@ -141,11 +142,12 @@ export default function FeaturesSection() {
                   </div>
                   {/* Spacer to push the button down if needed */}
                   <div className="flex-1" />
-                  <button
-                    className="w-full mt-2 py-2 rounded-xl bg-[#453142] text-[#faf9f7] font-semibold text-sm hover:bg-[#5a3f54] transition-all"
+                  <Link
+                    href="/online-courses?filter=all"
+                    className="w-full mt-2 py-2 rounded-xl bg-[#453142] text-[#faf9f7] font-semibold text-sm hover:bg-[#5a3f54] transition-all flex justify-center items-center"
                   >
                     View Classes
-                  </button>
+                  </Link>
                 </CardContent>
                 {/* Subtle hover overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#faf9f7]/0 to-[#453142]/10 group-hover:from-[#6e4d66]/5 group-hover:to-[#453142]/25 transition-all duration-300 pointer-events-none" />
