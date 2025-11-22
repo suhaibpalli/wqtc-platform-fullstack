@@ -12,11 +12,11 @@ const footerLinks = {
     { label: "Word for Word Method", href: "/about/why-understand-quran" },
     { label: "Our Mentor", href: "/about/our-mentor" },
   ],
-  resources: [
-    { label: "Video Library", href: "/library/videos" },
-    { label: "Audio Library", href: "/library/audio" },
-    { label: "eBooks Collection", href: "/library/ebooks" },
-    { label: "Online Courses", href: "/online-courses" },
+  onlineClasses: [
+    { label: "All Online Classes", href: "/online-courses?filter=all" },
+    { label: "Men's Online Classes", href: "/online-courses?filter=men" },
+    { label: "Women's Online Classes", href: "/online-courses?filter=women" },
+    { label: "Weekend Online Classes", href: "/online-courses?filter=weekend" },
   ],
   contact: [
     { 
@@ -181,7 +181,7 @@ export default function Footer() {
 
           {/* Translations Column */}
           <div className="space-y-4">
-            <h3 className="text-[#faf9f7] font-bold text-lg">Translations</h3>
+            <h3 className="text-[#faf9f7] font-bold text-lg">Quick Links</h3>
             <ul className="space-y-2">
               {footerLinks.translations.map((link) => (
                 <li key={link.href}>
@@ -199,11 +199,11 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Resources Column */}
+          {/* Online Classes Column */}
           <div className="space-y-4">
-            <h3 className="text-[#faf9f7] font-bold text-lg">Resources</h3>
+            <h3 className="text-[#faf9f7] font-bold text-lg">Online Classes</h3>
             <ul className="space-y-2">
-              {footerLinks.resources.map((link) => (
+              {footerLinks.onlineClasses.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

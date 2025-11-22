@@ -59,10 +59,10 @@ export default function TestimonialsSection() {
         >
           <Badge className="mb-4 bg-[#453142] text-[#faf9f7]">Testimonials</Badge>
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-[#453142]">
-            What Our Students Say
+            Impact of our Quran Classes
           </h2>
           <p className="text-[#453142]/80 text-lg md:text-xl max-w-2xl mx-auto">
-            Hear from our students about their transformational experiences learning Quran translation – their journeys, their growth, and the impact on their lives.
+          Hear from our students about their transformational experiences learning the translation of the Quran,  their journeys, their growth, and the impact on their lives.
           </p>
         </motion.div>
 

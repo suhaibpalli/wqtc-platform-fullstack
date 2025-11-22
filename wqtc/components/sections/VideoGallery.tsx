@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Clock, User, X, Loader2, CheckCircle2, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom"; // <--- ADD THIS IMPORT
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -209,11 +210,19 @@ function RegistrationForm({ course, onSuccess }: { course: any; onSuccess: () =>
   );
 }
 
-// --- UPDATED MODAL COMPONENT ---
+// --- UPDATED MODAL COMPONENT WITH PORTAL ---
 function CourseModal({ open, course, onClose }: { open: boolean; course: any; onClose: () => void }) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [mounted, setMounted] = useState(false); // Added for Portal safety
 
+  // 1. Handle mounting state
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (open) setIsSuccess(false);
   }, [open]);
@@ -227,8 +236,9 @@ function CourseModal({ open, course, onClose }: { open: boolean; course: any; on
   useEffect(() => {
     if (open) {
       document.addEventListener("keydown", handleKeyDown);
-      if (modalRef.current) modalRef.current.focus();
-      document.body.style.overflow = 'hidden';
+      // Slight delay to allow render before focus
+      setTimeout(() => modalRef.current?.focus(), 50);
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
     } else {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = 'unset';
@@ -245,12 +255,14 @@ function CourseModal({ open, course, onClose }: { open: boolean; course: any; on
     }
   }
 
-  if (!open || !course) return null;
+  // Prevent rendering on server or if closed
+  if (!mounted || !open || !course) return null;
 
-  return (
+  // 2. Wrap in createPortal to move it to document.body
+  return createPortal(
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm bg-black/70"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -276,6 +288,7 @@ function CourseModal({ open, course, onClose }: { open: boolean; course: any; on
               className="object-cover brightness-75"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
             <button
               className="absolute top-4 right-4 text-[#faf9f7] bg-black/20 hover:bg-black/40 rounded-full p-2 transition-colors z-10 backdrop-blur-sm"
               aria-label="Close"
@@ -283,6 +296,7 @@ function CourseModal({ open, course, onClose }: { open: boolean; course: any; on
             >
               <X className="h-5 w-5" />
             </button>
+
             <div className="absolute bottom-4 left-6 right-6">
               <Badge className="bg-[#faf9f7] text-[#453142] hover:bg-white border-0 mb-2 shadow-sm">
                 {course.classType} Class
@@ -339,7 +353,8 @@ function CourseModal({ open, course, onClose }: { open: boolean; course: any; on
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body // <--- The Portal Target
   );
 }
 
@@ -357,7 +372,7 @@ export default function VideoGallery() {
           viewport={{ once: true }}
           className="mb-12"
         >
-          <h2 className="text-3xl md:text-5xl font-bold mb-8 text-[#453142]">Online Free Quran Class Schedules</h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-8 text-[#453142] text-center">Online Free Quran Class Schedules</h2>
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
