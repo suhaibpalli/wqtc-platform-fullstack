@@ -20,7 +20,6 @@ const Page = forwardRef<HTMLDivElement, PageProps>(({ pageNumber, canvas }, ref)
   useEffect(() => {
     if (containerRef.current && canvas) {
       containerRef.current.innerHTML = '';
-      // Make sure canvas fits container
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       canvas.style.objectFit = 'contain';
@@ -29,7 +28,7 @@ const Page = forwardRef<HTMLDivElement, PageProps>(({ pageNumber, canvas }, ref)
   }, [canvas]);
 
   return (
-    <div ref={ref} className="page bg-white shadow-sm h-full w-full overflow-hidden">
+    <div ref={ref} className="page bg-white shadow-sm h-full w-full overflow-hidden" dir="rtl">
       <div className="page-content h-full w-full flex flex-col">
         <div ref={containerRef} className="w-full h-full flex items-center justify-center overflow-hidden" />
         <div className="page-footer absolute bottom-1 left-0 right-0 text-center text-[10px] text-[#453142]/30">
@@ -73,17 +72,11 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
     const updateDimensions = () => {
       if (containerRef.current) {
         const { clientWidth, clientHeight } = containerRef.current;
-        // Maintain a typical book aspect ratio (e.g., 0.7) or fit container
-        // For a 2-page spread, width needs to be divided by 2 effectively in calculations
-        // But react-pageflip takes the width of a SINGLE page
-
         const isMobile = window.innerWidth < 768;
 
-        // Calculate single page dimensions
         let pageHeight = clientHeight * 0.95; // 5% padding
         let pageWidth = pageHeight * 0.70; // Aspect ratio 1:1.4
 
-        // If width is too wide for screen
         if (pageWidth * (isMobile ? 1 : 2) > clientWidth) {
           pageWidth = (clientWidth * (isMobile ? 0.9 : 0.45));
           pageHeight = pageWidth / 0.70;
@@ -110,7 +103,6 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
   const loadPDF = async () => {
     if (!pdfjs) return;
     try {
-      // Only set loading if we don't have pages yet
       if (pages.length === 0) setLoading(true);
 
       const pdfUrl = `/pdfs/${filename}`;
@@ -119,13 +111,12 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
       setTotalPages(pdf.numPages);
 
       const pagePromises: Promise<HTMLCanvasElement>[] = [];
-
-      // We render based on the calculated dimensions to avoid blurriness
       for (let i = 1; i <= pdf.numPages; i++) {
         pagePromises.push(renderPage(pdf, i, dimensions.width, dimensions.height));
       }
 
-      const renderedPages = await Promise.all(pagePromises);
+      // Reverse the pages before sending them to the flipbook
+      const renderedPages = (await Promise.all(pagePromises)).reverse();
       setPages(renderedPages);
       setLoading(false);
     } catch (error) {
@@ -142,13 +133,10 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
   ): Promise<HTMLCanvasElement> => {
     const page = await pdf.getPage(pageNumber);
 
-    // Calculate scale required to fit the target dimensions
-    // We use a higher scale for quality, then CSS scales it down
     const unscaledViewport = page.getViewport({ scale: 1 });
     const scaleX = targetWidth / unscaledViewport.width;
     const scaleY = targetHeight / unscaledViewport.height;
 
-    // Use the smaller scale to fit entirely
     const scale = Math.min(scaleX, scaleY) * 2; // * 2 for retina/high DPI sharpness
 
     const viewport = page.getViewport({ scale });
@@ -168,15 +156,11 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
     return canvas;
   };
 
-  // Navigation: reversed for RTL
-  const nextPage = () => flipbookRef.current?.pageFlip().flipPrev();
-  const prevPage = () => flipbookRef.current?.pageFlip().flipNext();
+  // Navigation for RTL - nextPage is flipNext (to the left), prevPage is flipPrev (to the right)
+  const nextPage = () => flipbookRef.current?.pageFlip().flipNext();
+  const prevPage = () => flipbookRef.current?.pageFlip().flipPrev();
 
-  // Note: In RTL mode:
-  // flipNext() goes to the "left" (physically next page in English, previous in Arabic)
-  // flipPrev() goes to the "right" (physically prev page in English, next in Arabic)
-  // We map the buttons logically for the user.
-
+  // Reverse page number reporting for RTL
   const onFlip = (e: any) => {
     setCurrentPage(e.data);
   };
@@ -194,6 +178,8 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
     <div
       ref={containerRef}
       className="relative w-full h-full flex flex-col items-center justify-center bg-[#f3f3f3] overflow-hidden"
+      dir="rtl"
+      style={{ direction: 'rtl' }}
     >
       {/* Flipbook Instance */}
       <div className="relative z-0 flex items-center justify-center py-4">
@@ -211,8 +197,8 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
           mobileScrollSupport={true}
           onFlip={onFlip}
           className="shadow-2xl"
-          style={{}}
-          startPage={0}
+          style={{ direction: 'rtl' }} // force RTL for flipping
+          startPage={totalPages > 0 ? totalPages - 1 : 0} // start from last page (rightmost)
           drawShadow={true}
           flippingTime={800}
           usePortrait={typeof window !== 'undefined' ? window.innerWidth < 768 : false}
@@ -223,6 +209,8 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
           swipeDistance={30}
           showPageCorners={true}
           disableFlipByClick={false}
+          // @ts-ignore
+          rtl={true}
         >
           {pages.map((canvas, index) => (
             <Page key={index} pageNumber={index + 1} canvas={canvas} />
@@ -231,31 +219,31 @@ export default function PDFFlipbook({ filename }: PDFFlipbookProps) {
       </div>
 
       {/* Custom Controls Floating Bottom */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-xl border border-[#453142]/10 flex items-center gap-4">
-        {/* Right Arrow (Previous in RTL context means go Right) */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-xl border border-[#453142]/10 flex items-center gap-4 flex-row-reverse" dir="rtl">
+        {/* Left Arrow (RTL: Next, goes left) */}
         <Button
-          onClick={() => flipbookRef.current?.pageFlip().flipNext()}
+          onClick={nextPage}
           disabled={currentPage >= totalPages - 1}
           variant="ghost"
           size="icon"
           className="rounded-full hover:bg-[#453142]/10"
         >
-          <ChevronRight className="h-6 w-6 text-[#453142]" />
+          <ChevronLeft className="h-6 w-6 text-[#453142]" />
         </Button>
 
         <span className="text-sm font-medium text-[#453142] tabular-nums">
           {currentPage + 1} / {totalPages}
         </span>
 
-        {/* Left Arrow (Next in RTL context means go Left) */}
+        {/* Right Arrow (RTL: Prev, goes right) */}
         <Button
-          onClick={() => flipbookRef.current?.pageFlip().flipPrev()}
+          onClick={prevPage}
           disabled={currentPage === 0}
           variant="ghost"
           size="icon"
           className="rounded-full hover:bg-[#453142]/10"
         >
-          <ChevronLeft className="h-6 w-6 text-[#453142]" />
+          <ChevronRight className="h-6 w-6 text-[#453142]" />
         </Button>
       </div>
     </div>
