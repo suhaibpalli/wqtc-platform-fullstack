@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Search, X, Download } from 'lucide-react';
+import { BookOpen, Search, X, Download, FileText } from 'lucide-react'; // add FileText
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -21,6 +21,12 @@ const PDFFlipbook = dynamic(() => import('@/components/flipbook/PDFFlipbook'), {
       </div>
     </div>
   ),
+});
+
+// Dynamic import for scroll view
+const PDFScrollView = dynamic(() => import('@/components/flipbook/PDFScrollView'), {
+  ssr: false,
+  loading: () => <div className="p-12 text-center">Loading Scroll View...</div>
 });
 
 interface EBook {
@@ -412,7 +418,7 @@ export default function EBooksPage() {
           </>
         )}
 
-        {/* Flipbook Modal - keep existing code */}
+        {/* Flipbook Modal */}
         <AnimatePresence>
           {selectedEbook && (
             <FlipbookModal ebook={selectedEbook} onClose={() => setSelectedEbook(null)} />
@@ -431,6 +437,8 @@ function FlipbookModal({
   ebook: EBook;
   onClose: () => void;
 }) {
+  const [viewMode, setViewMode] = useState<'flip'|'scroll'>('flip');
+
   // Download handler for modal, rewritten for consistent PDF path
   const handleDownload = () => {
     const cleanFilename = ebook.filename.split('/').pop();
@@ -448,58 +456,88 @@ function FlipbookModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 md:p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
+        initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-lg w-full max-w-7xl h-[90vh] overflow-hidden"
+        exit={{ scale: 0.95, y: 20 }}
+        className="bg-[#faf9f7] rounded-xl w-full max-w-[90vw] md:max-w-7xl h-[90vh] overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-[#453142]/20">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center p-3 md:p-4 border-b border-[#453142]/10 bg-white gap-4 md:gap-0">
+          {/* Left: Title & Cover */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
             {ebook.coverImage && (
-              <img
-                src={ebook.coverImage}
-                alt={ebook.title}
-                className="w-16 h-20 object-cover rounded shadow-md"
-              />
+              <div className="relative h-12 w-8 md:h-16 md:w-12 flex-shrink-0">
+                <img
+                  src={ebook.coverImage}
+                  alt={ebook.title}
+                  className="object-cover rounded shadow-sm h-full w-full"
+                />
+              </div>
             )}
-            <div>
-              <h2 className="text-xl font-bold text-[#453142]">{ebook.title}</h2>
-              <p className="text-sm text-[#453142]/70 mt-1">
-                {ebook.description}
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-[#453142] truncate pr-4">{ebook.title}</h2>
+              <p className="text-xs text-[#453142]/60 hidden md:block">
+                {ebook.pages ? `${ebook.pages} Pages • ` : ''} Arabic Edition
               </p>
             </div>
           </div>
-          {/* Only show the Download button with text, and Close button */}
-          <div className="flex items-center gap-2">
+          {/* Center: View Toggles */}
+          <div className="flex bg-[#453142]/5 p-1 rounded-lg border border-[#453142]/10">
+            <button
+              onClick={() => setViewMode('flip')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'flip'
+                  ? 'bg-white text-[#453142] shadow-sm'
+                  : 'text-[#453142]/60 hover:text-[#453142]'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Book View</span>
+            </button>
+            <button
+              onClick={() => setViewMode('scroll')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                viewMode === 'scroll'
+                  ? 'bg-white text-[#453142] shadow-sm'
+                  : 'text-[#453142]/60 hover:text-[#453142]'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Scroll View</span>
+            </button>
+          </div>
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 ml-auto md:ml-0">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border-[#453142]/30 text-[#453142] hover:bg-[#453142]/5 flex items-center gap-2"
               onClick={handleDownload}
-              type="button"
-              aria-label="Download"
+              className="text-[#453142]/70 hover:bg-[#453142]/5 hidden sm:flex"
+              title="Download PDF"
             >
               <Download className="h-5 w-5" />
-              <span>Download</span>
             </Button>
+            <div className="h-6 w-px bg-[#453142]/20 mx-1 hidden sm:block" />
             <button
               onClick={onClose}
-              className="text-[#453142] hover:bg-[#453142]/10 rounded-full p-2 transition-colors"
-              aria-label="Close"
+              className="text-[#453142] hover:bg-red-50 hover:text-red-500 rounded-full p-2 transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
         </div>
-        {/* Flipbook Container */}
-        <div className="h-[calc(100%-80px)] overflow-hidden">
-          <PDFFlipbook filename={ebook.filename} />
+        {/* Viewer Content */}
+        <div className="flex-1 relative bg-[#f3f3f3] overflow-hidden">
+          {viewMode === 'flip' ? (
+            <PDFFlipbook filename={ebook.filename} />
+          ) : (
+            <PDFScrollView filename={ebook.filename} />
+          )}
         </div>
       </motion.div>
     </motion.div>
